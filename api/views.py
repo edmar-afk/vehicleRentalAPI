@@ -20,14 +20,19 @@ class CreateUserView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        username = serializer.validated_data.get('username')
-        email = serializer.validated_data.get('email')
+        validated_data = serializer.validated_data
+        username = validated_data.get('username')
+        email = validated_data.get('email')
+        mobile_num = validated_data.get('mobile_num', None)
 
         if User.objects.filter(username=username).exists():
             raise ValidationError({'username': 'A user with this username already exists.'})
 
         if User.objects.filter(email=email).exists():
             raise ValidationError({'email': 'A user with this email already exists.'})
+
+        if mobile_num and Profile.objects.filter(mobile_num=mobile_num).exists():
+            raise ValidationError({'mobile_num': 'A user with this mobile number already exists.'})
 
         # Saving the user and the profile together
         serializer.save()
