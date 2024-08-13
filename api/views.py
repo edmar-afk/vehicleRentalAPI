@@ -13,30 +13,34 @@ from django.shortcuts import get_object_or_404
 from django.views import View
 from rest_framework.decorators import api_view
 
-
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = ProfileSerializer
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        validated_data = serializer.validated_data
-        username = validated_data.get('username')
-        email = validated_data.get('email')
-        mobile_num = validated_data.get('mobile_num', None)
+        # Extract user data from request
+        user_data = self.request.data
+        username = user_data.get('username')
+        email = user_data.get('email')
+        business_permit = self.request.FILES.get('business_permit')
 
+        # Check if the username or email already exists
         if User.objects.filter(username=username).exists():
             raise ValidationError({'username': 'A user with this username already exists.'})
 
         if User.objects.filter(email=email).exists():
             raise ValidationError({'email': 'A user with this email already exists.'})
 
-        if mobile_num and Profile.objects.filter(mobile_num=mobile_num).exists():
-            raise ValidationError({'mobile_num': 'A user with this mobile number already exists.'})
+        # Save the user
+        user = serializer.save()
 
-        # Saving the user and the profile together
-        serializer.save()
-
+        # Create the profile
+        if business_permit:
+            Profile.objects.create(user=user, business_permit=business_permit)
+        else:
+            raise ValidationError({'business_permit': 'This field is required.'})
+        
 class UserDetailView(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
