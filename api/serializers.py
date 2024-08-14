@@ -2,6 +2,11 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Rental, Profile
 
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ['profile_pic']
+
 class UserSerializer(serializers.ModelSerializer):
     mobile_num = serializers.CharField(write_only=True)
 
@@ -27,4 +32,3 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['user', 'mobile_num', 'profile_pic']  # Ensure this matches your model fields
         
-
