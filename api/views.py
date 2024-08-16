@@ -34,7 +34,7 @@ class CreateUserView(generics.CreateAPIView):
         if mobile_num and Profile.objects.filter(mobile_num=mobile_num).exists():
             raise ValidationError({'mobile_num': 'A user with this mobile number already exists.'})
 
-        # Saving the user and the profile together
+
         serializer.save()
 
 class UserDetailView(generics.RetrieveAPIView):

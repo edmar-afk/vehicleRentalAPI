@@ -8,6 +8,7 @@ import os
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     mobile_num = models.TextField()
+   
     profile_pic = models.FileField(
         upload_to='profiles/',
         validators=[FileExtensionValidator(allowed_extensions=['png', 'jpeg', 'jpg'])], null=True, blank=True
