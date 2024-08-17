@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Rental, Profile
+from .models import Rental, Profile, Favorites
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,14 +21,43 @@ class UserSerializer(serializers.ModelSerializer):
         Profile.objects.create(user=user, mobile_num=mobile_num)
         return user
     
+    
 class RentalSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Rental
-        fields = ['__all__']
+        fields = ['id', 'posted_by', 'description', 'images', 'location', 'date_posted']
         extra_kwargs = {'posted_by': {'read_only': True}}
+        
+class DisplayRentalSerializer(serializers.ModelSerializer):
+    posted_by = UserSerializer()
+
+    class Meta:
+        model = Rental
+        fields = ['id', 'posted_by', 'description', 'images', 'location', 'date_posted']
+        extra_kwargs = {'posted_by': {'read_only': True}}
+        
         
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['user', 'mobile_num', 'profile_pic']  # Ensure this matches your model fields
+
+
+class FavoritesSerializer(serializers.ModelSerializer):
+   
+    class Meta:
+        model = Favorites
+        fields = ['post']
         
+class UserFavoriteSerializer(serializers.ModelSerializer):
+    post = DisplayRentalSerializer()
+
+    class Meta:
+        model = Favorites
+        fields = ['id', 'post']
+
+    def get_post(self, obj):
+        # Serialize the related post
+        from .serializers import RentalSerializer
+        return RentalSerializer(obj.post).data

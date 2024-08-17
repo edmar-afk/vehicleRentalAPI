@@ -3,10 +3,10 @@ from rest_framework import generics, permissions, views
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework import status
-from .serializers import UserSerializer, RentalSerializer, ProfileSerializer
+from .serializers import UserSerializer, RentalSerializer, ProfileSerializer, FavoritesSerializer, DisplayRentalSerializer, UserFavoriteSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from .models import Rental, Profile
+from .models import Rental, Profile, Favorites
 from rest_framework.views import APIView
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
@@ -46,7 +46,7 @@ class UserDetailView(generics.RetrieveAPIView):
         return self.request.user
     
     
-class RentalSet(generics.ListCreateAPIView):
+class RentalSet(generics.CreateAPIView):
     serializer_class = RentalSerializer
     permission_classes = [IsAuthenticated]
     
@@ -57,7 +57,6 @@ class RentalSet(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         if serializer.is_valid():
             serializer.save(posted_by=self.request.user)
-
         else:
             print(serializer.errors)
 
@@ -70,8 +69,17 @@ class RentalDelete(generics.DestroyAPIView):
         return Rental.objects.filter(posted_by=user)
     
     
-    
+class RentalListAPIView(generics.ListAPIView):
+    queryset = Rental.objects.all().order_by('-id')
+    serializer_class = DisplayRentalSerializer
+    permission_classes = [permissions.AllowAny]  # Or use permissions.IsAuthenticated if you want only logged-in users to see the rentals    
 
+    def get(self, request, *args, **kwargs):
+        # Debugging output
+        print(f"Request method: {request.method}")
+        response = super().get(request, *args, **kwargs)
+        print(f"Response status code: {response.status_code}")
+        return response
 
 class ProfilePictureUpdateView(views.APIView):
     permission_classes = [AllowAny]
@@ -106,3 +114,18 @@ class ProfileView(generics.RetrieveAPIView):
         serializer = self.get_serializer(profile)
         return Response(serializer.data)
         
+class CreateFavoriteView(generics.CreateAPIView):
+    queryset = Favorites.objects.all()
+    serializer_class = FavoritesSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # Automatically set the user to the currently authenticated user
+        serializer.save(user=self.request.user)
+        
+class UserFavoritesListAPIView(generics.ListAPIView):
+    serializer_class = UserFavoriteSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return Favorites.objects.filter(user=user)

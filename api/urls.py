@@ -14,4 +14,8 @@ urlpatterns = [
     path('user/', views.UserDetailView.as_view(), name='user_detail'),
     path('upload_picture/', views.ProfilePictureUpdateView.as_view(), name='upload_picture'),
     path('profile/<int:user_id>/', views.ProfileView.as_view(), name='profile_picture'),
+    path('rentals/', views.RentalListAPIView.as_view(), name='rental-list'),
+    
+    path('favorites/', views.CreateFavoriteView.as_view(), name='create_favorite'),
+    path('user/favorites/', views.UserFavoritesListAPIView.as_view(), name='user-favorites-list'),
 ]

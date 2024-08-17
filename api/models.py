@@ -19,16 +19,21 @@ class Profile(models.Model):
 
 class Rental(models.Model):
     posted_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    vehicle_name = models.TextField()
     description = models.TextField()
-    images = models.FileField(upload_to='media/', validators=[FileExtensionValidator(allowed_extensions=['png', 'jpeg', 'jpg'])],)
+    images = models.FileField(upload_to='rentals/', validators=[FileExtensionValidator(allowed_extensions=['png', 'jpeg', 'jpg'])],)
     location = models.TextField()
-    price = models.IntegerField()
     date_posted = models.DateTimeField(auto_now_add=True)
-    vehicle_type = models.FileField()
     
     def __str__(self):
-        return self.vehicle_name
+        return self.posted_by.first_name
+    
+class Favorites(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Rental, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)  # Example field
+
+    class Meta:
+        unique_together = ('user', 'post')
     
 
 class Message(models.Model):
