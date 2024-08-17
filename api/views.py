@@ -3,7 +3,7 @@ from rest_framework import generics, permissions, views
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework import status
-from .serializers import UserSerializer, RentalSerializer, ProfileSerializer, FavoritesSerializer, DisplayRentalSerializer, UserFavoriteSerializer
+from .serializers import UserSerializer, RentalSerializer, ProfileSerializer, FavoritesSerializer,ChatReceiverSerializer, DisplayRentalSerializer, UserFavoriteSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from .models import Rental, Profile, Favorites
@@ -129,3 +129,11 @@ class UserFavoritesListAPIView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return Favorites.objects.filter(user=user)
+    
+class ReceiverDetailAPIView(generics.RetrieveAPIView):
+    serializer_class = ChatReceiverSerializer
+
+    def get_object(self):
+        userid = self.kwargs.get('userid')  # Retrieve userid from URL parameters
+        profile = get_object_or_404(Profile, user__id=userid)  # Filter profile based on userid
+        return profile

@@ -18,4 +18,7 @@ urlpatterns = [
     
     path('favorites/', views.CreateFavoriteView.as_view(), name='create_favorite'),
     path('user/favorites/', views.UserFavoritesListAPIView.as_view(), name='user-favorites-list'),
+    
+    path('receiver/<int:userid>/', views.ReceiverDetailAPIView.as_view(), name='receiver-detail'),
+    
 ]

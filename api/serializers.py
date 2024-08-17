@@ -61,3 +61,11 @@ class UserFavoriteSerializer(serializers.ModelSerializer):
         # Serialize the related post
         from .serializers import RentalSerializer
         return RentalSerializer(obj.post).data
+    
+    
+    
+class ChatReceiverSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    class Meta:
+        model = Profile
+        fields = ['user', 'mobile_num', 'profile_pic'] 
