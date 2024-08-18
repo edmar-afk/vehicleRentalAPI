@@ -28,9 +28,22 @@ class RentalSerializer(serializers.ModelSerializer):
         model = Rental
         fields = ['id', 'posted_by', 'description', 'images', 'location', 'date_posted']
         extra_kwargs = {'posted_by': {'read_only': True}}
+
+
+
+
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(read_only=True)  # Include profile data
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'profile']
         
+   
 class DisplayRentalSerializer(serializers.ModelSerializer):
-    posted_by = UserSerializer()
+    posted_by = UserProfileSerializer()
 
     class Meta:
         model = Rental
@@ -52,10 +65,11 @@ class FavoritesSerializer(serializers.ModelSerializer):
         
 class UserFavoriteSerializer(serializers.ModelSerializer):
     post = DisplayRentalSerializer()
+    user_profile = ProfileSerializer(source='user.profile')
 
     class Meta:
         model = Favorites
-        fields = ['id', 'post']
+        fields = ['id', 'post', 'user_profile']
 
     def get_post(self, obj):
         # Serialize the related post
