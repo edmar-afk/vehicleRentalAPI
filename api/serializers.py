@@ -83,3 +83,20 @@ class ChatReceiverSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['user', 'mobile_num', 'profile_pic'] 
+        
+        
+class UserRentalListSerializer(serializers.ModelSerializer):
+    posted_by = UserSerializer()
+    class Meta:
+        model = Rental
+        fields = ['id','posted_by', 'description', 'images', 'location', 'date_posted']
+        
+class RentalDeleteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rental
+        fields = '__all__'
+
+    def validate_id(self, value):
+        if not Rental.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Rental with this ID does not exist.")
+        return value

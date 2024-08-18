@@ -21,4 +21,7 @@ urlpatterns = [
     
     path('receiver/<int:userid>/', views.ReceiverDetailAPIView.as_view(), name='receiver-detail'),
     
+    
+    path('my-rentals/<int:user_id>/', views.UserRentalsView.as_view(), name='user-rentals'),
+    path('rentals/<int:id>/delete/', views.RentalDeleteAPIView.as_view(), name='rental-delete'),
 ]

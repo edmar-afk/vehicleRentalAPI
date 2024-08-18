@@ -3,7 +3,7 @@ from rest_framework import generics, permissions, views
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework import status
-from .serializers import UserSerializer, RentalSerializer, ProfileSerializer, FavoritesSerializer,ChatReceiverSerializer, DisplayRentalSerializer, UserFavoriteSerializer
+from .serializers import UserSerializer, RentalDeleteSerializer, RentalSerializer, ProfileSerializer, FavoritesSerializer,ChatReceiverSerializer, UserRentalListSerializer, DisplayRentalSerializer, UserFavoriteSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from .models import Rental, Profile, Favorites
@@ -12,7 +12,7 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.views import View
 from rest_framework.decorators import api_view
-
+from rest_framework.exceptions import NotFound
 
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -137,3 +137,20 @@ class ReceiverDetailAPIView(generics.RetrieveAPIView):
         userid = self.kwargs.get('userid')  # Retrieve userid from URL parameters
         profile = get_object_or_404(Profile, user__id=userid)  # Filter profile based on userid
         return profile
+    
+    
+class UserRentalsView(generics.GenericAPIView):
+    serializer_class = UserRentalListSerializer
+
+    def get(self, request, user_id, *args, **kwargs):
+        try:
+            rentals = Rental.objects.filter(posted_by_id=user_id)
+            serializer = self.get_serializer(rentals, many=True)
+            return Response(serializer.data)
+        except Rental.DoesNotExist:
+            raise NotFound("Rentals not found for this user.")
+        
+class RentalDeleteAPIView(generics.DestroyAPIView):
+    queryset = Rental.objects.all()
+    serializer_class = RentalDeleteSerializer
+    lookup_field = 'id'
