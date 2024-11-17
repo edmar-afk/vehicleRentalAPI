@@ -17,11 +17,19 @@ urlpatterns = [
     path('rentals/', views.RentalListAPIView.as_view(), name='rental-list'),
     
     path('favorites/', views.CreateFavoriteView.as_view(), name='create_favorite'),
+    path('favorites/remove/<int:post_id>/', views.RemoveFavoriteView.as_view(), name='remove-favorite'),
     path('user/favorites/', views.UserFavoritesListAPIView.as_view(), name='user-favorites-list'),
-    
-    path('receiver/<int:userid>/', views.ReceiverDetailAPIView.as_view(), name='receiver-detail'),
-    
     
     path('my-rentals/<int:user_id>/', views.UserRentalsView.as_view(), name='user-rentals'),
     path('rentals/<int:id>/delete/', views.RentalDeleteAPIView.as_view(), name='rental-delete'),
+    path('rentals/<int:rental_id>/likes/', views.RentalLikeCreateAPIView.as_view(), name='rental-like-create'),
+    path('rental/<int:rental_id>/likes/', views.RentalLikeCreateAPIView.as_view(), name='rental-like-create'),
+    path('displayLikes/<int:rental_id>/', views.RentalLikeCountView.as_view(), name='display-likes'),
+    path('rental/<int:rental_id>/unlike/', views.RentalLikeDeleteAPIView.as_view(), name='rental-like-delete'),
+     path('rental/<int:rental_id>/toggle-like/', views.ToggleRentalLikeAPIView.as_view(), name='toggle-rental-like'),
+    
+    path('create-chat/<int:receiver_id>/', views.create_chat_room_and_send_message, name='create-chat'),
+    path('my-chat-rooms/', views.get_chat_rooms_for_logged_in_user, name='my-chat-rooms'),
+    path('chat_rooms/<int:other_user_id>/<int:current_user_id>/', views.ChatRoomView.as_view(), name='chat-room-list'),
+    path('user/<int:id>/', views.UserDetailAPIView.as_view(), name='user-detail'),
 ]

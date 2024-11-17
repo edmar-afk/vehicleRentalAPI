@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Rental, Profile, Favorites
+from .models import Rental, Profile, Favorites, ChatRoom, Message, RentalLike
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,6 +31,13 @@ class RentalSerializer(serializers.ModelSerializer):
 
 
 
+class RentalLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RentalLike
+        fields = ['id', 'user', 'rental']
+        extra_kwargs = {
+            'user': {'read_only': True},  # User will be set programmatically
+        }
 
 
 
@@ -52,6 +59,7 @@ class DisplayRentalSerializer(serializers.ModelSerializer):
         
         
 class ProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
     class Meta:
         model = Profile
         fields = ['user', 'mobile_num', 'profile_pic']  # Ensure this matches your model fields
@@ -77,12 +85,7 @@ class UserFavoriteSerializer(serializers.ModelSerializer):
         return RentalSerializer(obj.post).data
     
     
-    
-class ChatReceiverSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    class Meta:
-        model = Profile
-        fields = ['user', 'mobile_num', 'profile_pic'] 
+
         
         
 class UserRentalListSerializer(serializers.ModelSerializer):
@@ -100,3 +103,36 @@ class RentalDeleteSerializer(serializers.ModelSerializer):
         if not Rental.objects.filter(id=value).exists():
             raise serializers.ValidationError("Rental with this ID does not exist.")
         return value
+    
+class RentalLikeSerializer(serializers.ModelSerializer):
+    # Optionally, include the related user and rental as nested fields
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    rental = serializers.PrimaryKeyRelatedField(queryset=Rental.objects.all())
+
+    class Meta:
+        model = RentalLike
+        fields = ['id', 'user', 'rental']
+
+    def validate(self, data):
+        # Ensure a user can only like a rental once
+        if RentalLike.objects.filter(rental=data['rental'], user=data['user']).exists():
+            raise serializers.ValidationError("This user has already liked this rental.")
+        return data  
+
+
+
+class ChatRoomSerializer(serializers.ModelSerializer):
+    users = UserSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ChatRoom
+        fields = ['id', 'users']  # Include 'users' field to show associated users
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    chat_room = serializers.PrimaryKeyRelatedField(queryset=ChatRoom.objects.all())
+
+    class Meta:
+        model = Message
+        fields = ['id', 'chat_room', 'sender', 'content', 'timestamp']
+        

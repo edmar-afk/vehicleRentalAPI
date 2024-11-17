@@ -27,27 +27,41 @@ class Rental(models.Model):
     def __str__(self):
         return self.posted_by.first_name
     
+    
+class RentalLike(models.Model):
+    rental = models.ForeignKey(Rental, related_name='likes', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('rental', 'user')  # Ensures a user can only like a rental once
+
+    def __str__(self):
+        return f'{self.user} liked {self.rental}'    
+    
+
 class Favorites(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(Rental, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)  # Example field
+    created_at = models.DateTimeField(auto_now_add=True)  
 
     class Meta:
         unique_together = ('user', 'post')
     
 
-class Message(models.Model):
-    message = models.TextField()
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
-    sent_time = models.DateTimeField(auto_now_add=True)  # Default value is the current time
-    sender_is_read = models.BooleanField(default=False)
-    receiver_is_read = models.BooleanField(default=False)
-    
-    class Meta:
-        verbose_name = 'Message'
-        verbose_name_plural = 'Messages'
-        ordering = ['-sent_time']  # Messages will be ordered by sent time, newest first
+class Like(models.Model):
+    renter = models.ForeignKey(Rental, on_delete=models.CASCADE)
+
+class ChatRoom(models.Model):
+    users = models.ManyToManyField(User, related_name='chat_rooms')
 
     def __str__(self):
-        return f"From {self.sender.username} to {self.receiver.username} at {self.sent_time}"
+        return f'Chat Room with users: {", ".join(user.username for user in self.users.all())}'
+
+class Message(models.Model):
+    chat_room = models.ForeignKey(ChatRoom, related_name='messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.sender.username}: {self.content}'
