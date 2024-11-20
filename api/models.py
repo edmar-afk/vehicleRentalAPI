@@ -65,3 +65,20 @@ class Message(models.Model):
 
     def __str__(self):
         return f'{self.sender.username}: {self.content}'
+    
+    
+class RateOwner(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rates_received')
+    rate_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rates_given')
+    points = models.IntegerField()  # IntegerField is more appropriate for numeric ratings
+
+    def __str__(self):
+        return f'{self.rate_by} rated {self.owner} {self.points} points'
+    
+class RateCustomer(models.Model):
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customer_rates_received')
+    rate_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owner_rates_given')
+    points = models.IntegerField()  # IntegerField is more appropriate for numeric ratings
+
+    def __str__(self):
+        return f'{self.rate_by} rated {self.customer} {self.points} points'

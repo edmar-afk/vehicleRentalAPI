@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Rental, Profile, Favorites, ChatRoom, Message, RentalLike
+from .models import Rental, Profile, Favorites, ChatRoom, Message, RentalLike, RateOwner, RateCustomer
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -136,3 +136,15 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = ['id', 'chat_room', 'sender', 'content', 'timestamp']
         
+
+
+class RateOwnerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RateOwner
+        fields = ['id', 'owner', 'rate_by', 'points']
+        
+
+class RateCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RateCustomer
+        fields = ['id', 'customer', 'rate_by', 'points']

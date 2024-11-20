@@ -3,10 +3,10 @@ from rest_framework import generics, permissions, views
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework import status
-from .serializers import UserSerializer, ChatRoomSerializer, MessageSerializer, RentalDeleteSerializer, RentalSerializer, ProfileSerializer, FavoritesSerializer, RentalLikeSerializer, UserRentalListSerializer, DisplayRentalSerializer, UserFavoriteSerializer
+from .serializers import UserSerializer, ChatRoomSerializer, RateOwnerSerializer, MessageSerializer, RateCustomerSerializer, RentalDeleteSerializer, RentalSerializer, ProfileSerializer, FavoritesSerializer, RentalLikeSerializer, UserRentalListSerializer, DisplayRentalSerializer, UserFavoriteSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from .models import Rental, Profile, Favorites, RentalLike, ChatRoom, Message
+from .models import Rental, Profile, Favorites, RentalLike, ChatRoom, Message, RateOwner, RateCustomer
 from rest_framework.views import APIView
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
@@ -195,6 +195,8 @@ class RentalLikeCreateAPIView(generics.CreateAPIView):
     
     
 class RentalLikeCountView(APIView):
+    permission_classes = [AllowAny]
+    
     def get(self, request, rental_id):
         rental = Rental.objects.get(id=rental_id)
         like_count = rental.likes.count()  # Assuming 'likes' is a related field
@@ -362,3 +364,182 @@ class UserDetailAPIView(RetrieveAPIView):
     serializer_class = UserSerializer
     lookup_field = 'id'
     permission_classes = [IsAuthenticated]  # Use AllowAny if public access is needed
+    
+    
+
+class RateOwnerView(APIView):
+    """
+    Allow users to rate an owner.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, ownerId, ratedById, *args, **kwargs):
+        # Log received data
+        print(f"Received data: {request.data}")
+
+        # Validate owner exists
+        try:
+            owner = User.objects.get(id=ownerId)
+        except User.DoesNotExist:
+            return Response({"error": "The owner does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validate rater exists
+        try:
+            rater = User.objects.get(id=ratedById)
+        except User.DoesNotExist:
+            return Response({"error": "The rater does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Extract and validate points
+        points = request.data.get("points")
+        if points is None:
+            return Response({"error": "Points are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if the user has already rated this owner
+        if RateOwner.objects.filter(owner=owner, rate_by=rater).exists():
+            return Response({"error": "You have already rated this owner."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save the rating
+        serializer = RateOwnerSerializer(data={"owner": owner.id, "rate_by": rater.id, "points": points})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CheckRatingView(APIView):
+    """
+    Check if a user has already rated a specific owner.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, ownerId, ratedById, *args, **kwargs):
+        # Check if a rating exists between this owner and rater
+        already_rated = RateOwner.objects.filter(owner_id=ownerId, rate_by_id=ratedById).exists()
+        return Response({"alreadyRated": already_rated})
+    
+
+
+
+class OwnerRatingAPIView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, owner_id):
+        try:
+            # Get all ratings for the owner
+            ratings = RateOwner.objects.filter(owner_id=owner_id)
+            
+            if not ratings.exists():
+                return Response({
+                    "owner_id": owner_id,
+                    "average_rating": None,
+                    "total_ratings": 0,
+                    "points": [],
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Calculate the average rating
+            total_points = sum(rating.points for rating in ratings)
+            total_ratings = ratings.count()
+            average_rating = round(total_points / total_ratings, 2)  # Rounded to 2 decimals
+            
+            # Extract individual points
+            points = list(ratings.values_list('points', flat=True))
+            
+            return Response({
+                "owner_id": owner_id,
+                "average_rating": average_rating,
+                "total_ratings": total_ratings,
+                "points": points,
+            }, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+
+
+
+class RateCustomerView(APIView):
+    """
+    Allow users to rate an owner.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, customerId, ratedById, *args, **kwargs):
+        # Log received data
+        print(f"Received data: {request.data}")
+
+        # Validate owner exists
+        try:
+            customer = User.objects.get(id=customerId)
+        except User.DoesNotExist:
+            return Response({"error": "The owner does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validate rater exists
+        try:
+            rater = User.objects.get(id=ratedById)
+        except User.DoesNotExist:
+            return Response({"error": "The rater does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Extract and validate points
+        points = request.data.get("points")
+        if points is None:
+            return Response({"error": "Points are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if the user has already rated this owner
+        if RateCustomer.objects.filter(customer=customer, rate_by=rater).exists():
+            return Response({"error": "You have already rated this owner."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save the rating
+        serializer = RateCustomerSerializer(data={"customer": customer.id, "rate_by": rater.id, "points": points})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+class CheckCustomerRatingView(APIView):
+    """
+    Check if a user has already rated a specific owner.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, customerId, ratedById, *args, **kwargs):
+        # Check if a rating exists between this owner and rater
+        already_rated = RateCustomer.objects.filter(customer_id=customerId, rate_by_id=ratedById).exists()
+        return Response({"alreadyRated": already_rated})
+    
+    
+    
+class CustomerRatingAPIView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, customer_id):
+        try:
+            # Get all ratings for the owner
+            ratings = RateCustomer.objects.filter(customer_id=customer_id)
+            
+            if not ratings.exists():
+                return Response({
+                    "customer_id": customer_id,
+                    "average_rating": None,
+                    "total_ratings": 0,
+                    "points": [],
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Calculate the average rating
+            total_points = sum(rating.points for rating in ratings)
+            total_ratings = ratings.count()
+            average_rating = round(total_points / total_ratings, 2)  # Rounded to 2 decimals
+            
+            # Extract individual points
+            points = list(ratings.values_list('points', flat=True))
+            
+            return Response({
+                "customer_id": customer_id,
+                "average_rating": average_rating,
+                "total_ratings": total_ratings,
+                "points": points,
+            }, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

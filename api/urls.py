@@ -32,4 +32,14 @@ urlpatterns = [
     path('my-chat-rooms/', views.get_chat_rooms_for_logged_in_user, name='my-chat-rooms'),
     path('chat_rooms/<int:other_user_id>/<int:current_user_id>/', views.ChatRoomView.as_view(), name='chat-room-list'),
     path('user/<int:id>/', views.UserDetailAPIView.as_view(), name='user-detail'),
+    
+    
+    path('rate-owner/<int:ownerId>/<int:ratedById>/', views.RateOwnerView.as_view(), name='rate-owner'),
+    path('check-rating/<int:ownerId>/<int:ratedById>/', views.CheckRatingView.as_view(), name='check-rating'),
+    path('owner/<int:owner_id>/rating/', views.OwnerRatingAPIView.as_view(), name='owner-rating'),
+    
+    
+    path('rate-customer/<int:customerId>/<int:ratedById>/', views.RateCustomerView.as_view(), name='rate-customer'),
+    path('check-customer-rating/<int:customerId>/<int:ratedById>/', views.CheckCustomerRatingView.as_view(), name='check-customer-rating'),
+    path('customer/<int:customer_id>/rating/', views.CustomerRatingAPIView.as_view(), name='customer-rating'),
 ]
