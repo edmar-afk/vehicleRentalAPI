@@ -3,10 +3,10 @@ from rest_framework import generics, permissions, views
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework import status
-from .serializers import UserSerializer, ChatRoomSerializer, RateOwnerSerializer, MessageSerializer, RateCustomerSerializer, RentalDeleteSerializer, RentalSerializer, ProfileSerializer, FavoritesSerializer, RentalLikeSerializer, UserRentalListSerializer, DisplayRentalSerializer, UserFavoriteSerializer
+from .serializers import UserSerializer, ChatRoomSerializer, RateOwnerSerializer, MessageSerializer, CommentsSerializer, RateCustomerSerializer, RentalDeleteSerializer, RentalSerializer, ProfileSerializer, FavoritesSerializer, RentalLikeSerializer, UserRentalListSerializer, DisplayRentalSerializer, UserFavoriteSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from .models import Rental, Profile, Favorites, RentalLike, ChatRoom, Message, RateOwner, RateCustomer
+from .models import Rental, Profile, Favorites, RentalLike, ChatRoom, Message, RateOwner, RateCustomer, Comments
 from rest_framework.views import APIView
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
@@ -113,10 +113,10 @@ class ProfileView(generics.RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         user_id = kwargs.get('user_id')
-       
         profile = Profile.objects.get(user__id=user_id)
         serializer = self.get_serializer(profile)
         return Response(serializer.data)
+
         
 class CreateFavoriteView(generics.CreateAPIView):
     queryset = Favorites.objects.all()
@@ -543,3 +543,114 @@ class CustomerRatingAPIView(APIView):
         
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+class PostCommentAPIView(APIView):
+    def post(self, request, commentor_id, post_id):
+        try:
+            # Fetch related objects
+            commentor = User.objects.get(id=commentor_id)
+            post = Rental.objects.get(id=post_id)
+        except User.DoesNotExist:
+            return Response({"error": "Commentor not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Rental.DoesNotExist:
+            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Print received data for debugging
+        print("Received data:", request.data)
+
+        # Exclude 'post' and 'commentor' from the request data
+        data = request.data.copy()  # Make a copy to avoid modifying the original request.data
+        data['post'] = post.id
+        data['commentor'] = commentor.id  # Pass just the user ID
+
+        # Create a new comment
+        serializer = CommentsSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()  # commentor and post are automatically set
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        # Print validation errors for debugging
+        print("Validation errors:", serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    
+class CommentsListAPIView(APIView):
+    def get(self, request, post_id):
+        try:
+            # Ensure the post exists
+            post = Rental.objects.get(id=post_id)
+        except Rental.DoesNotExist:
+            return Response({'error': 'Post not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get all comments for the specified post
+        comments = Comments.objects.filter(post=post).order_by('-date_commented')
+        serializer = CommentsSerializer(comments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class RentalDetailView(RetrieveAPIView):
+    queryset = Rental.objects.all()  # Or apply any specific filter if needed
+    serializer_class = RentalSerializer
+    lookup_field = 'id'  # This assumes the parameter in the URL will be 'id'
+    
+    def get(self, request, *args, **kwargs):
+        rental = self.get_object()
+        serializer = self.get_serializer(rental)
+        return Response(serializer.data)
+    
+    
+
+
+
+class UnreadMessagesGlobalCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        try:
+            # Validate the provided user_id
+            current_user = User.objects.get(id=user_id)
+
+            # Get the chat rooms the current user is part of
+            user_chat_rooms = ChatRoom.objects.filter(users=current_user)
+
+            # Count unread messages in those chat rooms where the sender is not the current user
+            unread_count = Message.objects.filter(
+                chat_room__in=user_chat_rooms,
+                is_read=False
+            ).exclude(sender=current_user).count()
+
+            return Response({'unread_count': unread_count})
+
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=404)
+        
+class MarkMessagesAsReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, chat_room_id, user_id):
+        try:
+            # Validate the user
+            current_user = User.objects.get(id=user_id)
+
+            # Get the chat room
+            chat_room = ChatRoom.objects.get(id=chat_room_id)
+
+            # Check if the user is part of the chat room
+            if not chat_room.users.filter(id=current_user.id).exists():
+                return Response({'error': 'This user is not a member of the chat room.'}, status=403)
+
+            # Update messages in the chat room, excluding messages sent by the current user
+            updated_count = chat_room.messages.filter(
+                is_read=False
+            ).exclude(sender=current_user).update(is_read=True)
+
+            return Response({
+                'message': 'Messages marked as read successfully.',
+                'updated_count': updated_count
+            })
+
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=404)
+        except ChatRoom.DoesNotExist:
+            return Response({'error': 'Chat room not found.'}, status=404)

@@ -62,7 +62,7 @@ class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-
+    is_read = models.BooleanField(default=False)
     def __str__(self):
         return f'{self.sender.username}: {self.content}'
     
@@ -82,3 +82,11 @@ class RateCustomer(models.Model):
 
     def __str__(self):
         return f'{self.rate_by} rated {self.customer} {self.points} points'
+    
+    
+
+class Comments(models.Model):
+    post = models.ForeignKey(Rental, on_delete=models.CASCADE)
+    commentor = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    date_commented = models.DateTimeField(auto_now_add=True)

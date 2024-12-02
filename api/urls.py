@@ -42,4 +42,18 @@ urlpatterns = [
     path('rate-customer/<int:customerId>/<int:ratedById>/', views.RateCustomerView.as_view(), name='rate-customer'),
     path('check-customer-rating/<int:customerId>/<int:ratedById>/', views.CheckCustomerRatingView.as_view(), name='check-customer-rating'),
     path('customer/<int:customer_id>/rating/', views.CustomerRatingAPIView.as_view(), name='customer-rating'),
+    
+    
+    
+    
+    path('comments/<int:commentor_id>/<int:post_id>/', views.PostCommentAPIView.as_view(), name='post-comment'),
+    path('comments/<int:post_id>/', views.CommentsListAPIView.as_view(), name='comments-list'),
+    
+    
+    path('rental/<int:id>/', views.RentalDetailView.as_view(), name='rental-detail'),
+    
+    
+    
+    path('messages/unread-global/<int:user_id>/', views.UnreadMessagesGlobalCountView.as_view(), name='unread-messages-global-count'),
+    path('chatrooms/<int:chat_room_id>/mark-read/<int:user_id>/', views.MarkMessagesAsReadView.as_view(), name='mark-messages-as-read'),
 ]

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Rental, Profile, Favorites, ChatRoom, Message, RentalLike, RateOwner, RateCustomer
+from .models import Rental, Profile, Favorites, ChatRoom, Message, RentalLike, RateOwner, RateCustomer, Comments
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,7 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     
 class RentalSerializer(serializers.ModelSerializer):
-    
+    posted_by = UserSerializer()
     class Meta:
         model = Rental
         fields = ['id', 'posted_by', 'description', 'images', 'location', 'date_posted']
@@ -60,6 +60,8 @@ class DisplayRentalSerializer(serializers.ModelSerializer):
         
 class ProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer()
+    profile_pic = serializers.ImageField(use_url=True)  # Ensures the URL is included in the response
+
     class Meta:
         model = Profile
         fields = ['user', 'mobile_num', 'profile_pic']  # Ensure this matches your model fields
@@ -134,7 +136,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'chat_room', 'sender', 'content', 'timestamp']
+        fields = ['id', 'chat_room', 'sender', 'content', 'timestamp', 'is_read']
         
 
 
@@ -148,3 +150,24 @@ class RateCustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = RateCustomer
         fields = ['id', 'customer', 'rate_by', 'points']
+
+
+
+
+class CommentsSerializer(serializers.ModelSerializer):
+    # Use PrimaryKeyRelatedField to accept the user ID for POST requests
+    commentor = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = Comments
+        fields = ['id', 'post', 'commentor', 'date_commented', 'content']
+        read_only_fields = ['id', 'date_commented']
+
+    # Optionally, you can create a method to add the user data on GET requests
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # On GET requests, add detailed user data for 'commentor'
+        representation['commentor'] = UserSerializer(instance.commentor).data
+        return representation
+
+
